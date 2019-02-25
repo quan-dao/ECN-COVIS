@@ -40,16 +40,15 @@ int main()
     // initiate virtual visual servoing with inter-point distance and pattern dimensions
     VVS vvs(cam, 0.03, 8, 6);
 
-    vpHomogeneousMatrix M;
-    M.buildFrom(
-        0,0.,0.5,                                                                        // translation
-        0,0,0);   // rotation
+    vpHomogeneousMatrix M;  // camera pose
 
+    // find pose of camera
     for(int i = 0; i < 9; ++i) {
         stringstream ss;
         ss << prefix << i << ".jpg";
         std::ifstream testfile(base + ss.str());
         if(testfile.good()) {
+            testfile.close();
             Pattern pat;
             pat.im = cv::imread(base + ss.str());
             tracker.detect(pat.im, pat.point);
@@ -60,9 +59,8 @@ int main()
             waitKey(0);
 
             // calibrate from this single image
-            // the initial guess for M
+            if(i == 0){vvs.computePose(pat, M, true);} else{vvs.computePose(pat, M);}
 
-            vvs.computePose(pat, M);
         }
     }
 

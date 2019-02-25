@@ -165,6 +165,15 @@ void VVS::computePose(Pattern &_pat, vpHomogeneousMatrix &_M, const bool &_reset
     vpMatrix Li(2, 6);               // Jacobian for 1 point for extrinsic
 
     v = 1;
+
+    // initial guess for M
+    if(_reset){
+        _M.buildFrom(
+            0, 0., 0.5,                                                                        // translation
+            0, 0, atan2(_pat.point[5].y - _pat.point[0].y, _pat.point[5].x - _pat.point[0].x));   // rotation
+
+    }
+
     unsigned int iter = 0;
     while(v.euclideanNorm() > 1e-5 && iter++ < 100) {
         for(unsigned int i = 0; i < m; ++i) {
@@ -172,6 +181,7 @@ void VVS::computePose(Pattern &_pat, vpHomogeneousMatrix &_M, const bool &_reset
             X_[i].track(_M);
 
             // use the current intrinsic estimation to project into pixels
+            unsigned int row = 2 * i;
             cam_->project(X_[i], s[row], s[row+1]);
 
             // compute the extrinsic Jacobian for this point
