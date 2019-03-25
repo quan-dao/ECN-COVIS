@@ -27,32 +27,12 @@ def sign(x):
 
 
 def findQueryKeypoints(query_img, box_array):
-	# ROI in query_img
-	box_array = np.int32(np.round(box_array))
-	x0 = np.append(box_array[0], 1)
-	x1 = np.append(box_array[1], 1)
-	x2 = np.append(box_array[2], 1)
-	x3 = np.append(box_array[3], 1)
-	
-	# Find lines cross 2 pair of vertexes
-	l0 = np.cross(x0, x1)
-	l1 = np.cross(x1, x2)
-	l2 = np.cross(x2, x3) 
-	l3 = np.cross(x3, x0)
-	l = [l0, l1, l2, l3]
+	roi_corners = box_array.reshape(1, 4, 2)
+	mask = np.zeros(query_img.shape, dtype=np.uint8)
+	mask.fill(0)
 
-	# create mask
-	mask_list = [np.zeros(query_img.shape) for i in range(4)]
-	for h, mask in enumerate(mask_list):
-	    for i in range(mask.shape[0]):
-	        for j in range(mask.shape[1]):
-	            x = np.array([i, j, 1])
-	            if sign(l[h].dot(x)) > 0:
-	                mask[i, j] = 1
-
-	mask02 = 1 - cv.bitwise_or(mask_list[0], mask_list[2])
-	mask13 = 1 - cv.bitwise_not(cv.bitwise_or(mask_list[1], mask_list[3]))
-	mask = cv.bitwise_and(mask02, mask13)
+	# fill the ROI into the mask
+	cv.fillPoly(mask, roi_corners.astype(np.int32), 255)
 
 	# Find keypoints & descriptors
 	kp_query, des_query = surf.detectAndCompute(query_img, mask.astype(np.uint8))
@@ -84,7 +64,6 @@ def localizeObject(kp_query, kp_train, good_matches, box_array):
 	matchesMask = mask.ravel().tolist()
 
 	pts = box_array.reshape(-1, 1, 2)
-
 	dst = cv.perspectiveTransform(pts, M)
 	return dst
 
