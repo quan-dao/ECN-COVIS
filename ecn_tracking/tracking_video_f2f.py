@@ -19,19 +19,44 @@ search_params = dict(checks=50)   # or pass empty dictionary
 flann = cv.FlannBasedMatcher(index_params,search_params)
 
 
+def sign(x):
+	if x > 0:
+		return 1
+	else:
+		return -1
+
+
 def findQueryKeypoints(query_img, box_array):
 	# ROI in query_img
 	box_array = np.int32(np.round(box_array))
-	x = box_array[0, 0]
-	y = box_array[0, 1]
-	w = box_array[3, 0] - box_array[0, 0] + 1
-	h = box_array[1, 1] - box_array[0, 1] + 1
+	x0 = np.append(box_array[0], 1)
+	x1 = np.append(box_array[1], 1)
+	x2 = np.append(box_array[2], 1)
+	x3 = np.append(box_array[3], 1)
+	
+	# Find lines cross 2 pair of vertexes
+	l0 = np.cross(x0, x1)
+	l1 = np.cross(x1, x2)
+	l2 = np.cross(x2, x3) 
+	l3 = np.cross(x3, x0)
+	l = [l0, l1, l2, l3]
+
 	# create mask
-	mask = np.zeros(query_img.shape)
-	mask[x: x+w, y: y+h] = 1
+	mask_list = [np.zeros(query_img.shape) for i in range(4)]
+	for h, mask in enumerate(mask_list):
+	    for i in range(mask.shape[0]):
+	        for j in range(mask.shape[1]):
+	            x = np.array([i, j, 1])
+	            if sign(l[h].dot(x)) > 0:
+	                mask[i, j] = 1
+
+	mask02 = 1 - cv.bitwise_or(mask_list[0], mask_list[2])
+	mask13 = 1 - cv.bitwise_not(cv.bitwise_or(mask_list[1], mask_list[3]))
+	mask = cv.bitwise_and(mask02, mask13)
+
 	# Find keypoints & descriptors
 	kp_query, des_query = surf.detectAndCompute(query_img, mask.astype(np.uint8))
-	return kp_query, des_query
+	return mask, kp_query, des_query
 
 
 
@@ -79,8 +104,8 @@ while cap.isOpened():
 		train_img = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 
 		# Find keypoints & descriptors in query_img
-		kp_query, des_query = findQueryKeypoints(query_img, box_array)
-		
+		mask, kp_query, des_query = findQueryKeypoints(query_img, box_array)
+		cv.imshow('mask', mask)
 		# Find matched keypoints
 		good_matches, kp_train = findMatchedKeyPoints(train_img, des_query)
 		
@@ -112,3 +137,6 @@ while cap.isOpened():
 
 cv.destroyAllWindows()
 cap.release()
+
+
+# Frame-2-Frame fails cause it doesn't have  reference
