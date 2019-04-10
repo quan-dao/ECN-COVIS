@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
 import sys
+import matplotlib.pyplot as plt
 
 
 class VideoTracker(object):
@@ -97,7 +98,7 @@ class VideoTracker(object):
 			self.query_img = train_img
 			self.box_array = dst.squeeze()
 
-		return dst
+		return dst, len(self.good_matches)
 
 
 if __name__ == '__main__':
@@ -107,16 +108,18 @@ if __name__ == '__main__':
 		print 'Tracking using the first frame as reference'
 		f2f = False
 	else:
-		print 'Tracking using the first frame as reference'
+		print 'Tracking using the previous frame as reference'
 		f2f = True
 	vid_tracker = VideoTracker(video_path, f2f)
+	num_good_matches = []
 	while vid_tracker.video.isOpened():
 		ret, frame = vid_tracker.video.read()
 		if ret:
 			# get train_img
 			train_img = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 			# get the bounding box of the object in train_img
-			dst = vid_tracker.localizeObject(train_img)
+			dst, _num_good_matches = vid_tracker.localizeObject(train_img)
+			num_good_matches.append(_num_good_matches)
 			if dst is not None:
 				# draw bounding box for found object
 				tracked_img = cv.polylines(train_img, [np.int32(dst)], True, 255, 3, cv.LINE_AA)
@@ -130,4 +133,12 @@ if __name__ == '__main__':
 
 	cv.destroyAllWindows()
 	vid_tracker.video.release()
+
+	min_good_matches = [8 for i in range(len(num_good_matches))]
+	plt.plot(num_good_matches)
+	plt.plot(min_good_matches)
+	plt.ylabel('Nb good matches')
+	plt.xlabel('Frame Idx')
+	plt.grid()
+	plt.show()
 	
