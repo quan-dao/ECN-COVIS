@@ -29,7 +29,7 @@ using namespace covis;
 int main()
 {
     // load calibration images from hard drive
-    const string base = "/home/mquan/ecn/covis/calibrationImages/";
+    const string base = "../images/";
     const string prefix = "img";
 
     //GridTracker tracker;      // this tracker detects a 6x6 grid of points

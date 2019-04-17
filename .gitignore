@@ -1,7 +1,6 @@
 *.zip
-*/build
-*/images
+ecn_calib-master/build/*
 *.user
 .gitignore
-calibrationImages
+*/.ipy*
 !.gitignore
